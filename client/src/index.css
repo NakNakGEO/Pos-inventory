@@ -1,40 +1,119 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import 'tailwindcss/base';
+@import 'tailwindcss/components';
+@import 'tailwindcss/utilities';
+@import url('https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap');
 
 @layer base {
   body {
-    @apply bg-gray-100 text-gray-900 dark:bg-gray-900 dark:text-gray-100;
+    @apply bg-gray-50 text-gray-900;
+    font-family: 'Roboto', sans-serif;
+  }
+}
+/* Add custom styles and I dont know what im doing here XD*/
+
+/*  animation styles */
+@keyframes gradient-right {
+  0% {
+    background-position: 100% 0;
+  }
+  100% {
+    background-position: 0 0;
   }
 }
 
-@layer components {
-  .btn {
-    @apply px-4 py-2 rounded font-semibold text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-opacity-75;
+@keyframes gradient-left {
+  0% {
+    background-position: 0 0;
   }
-
-  .btn-primary {
-    @apply bg-blue-500 text-white hover:bg-blue-600 focus:ring-blue-400;
-  }
-
-  .btn-secondary {
-    @apply bg-gray-200 text-gray-800 hover:bg-gray-300 focus:ring-gray-300;
-  }
-
-  .input {
-    @apply mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50;
+  100% {
+    background-position: 100% 0;
   }
 }
 
-.dark .recharts-cartesian-grid-horizontal line,
-.dark .recharts-cartesian-grid-vertical line {
-  stroke: #4B5563;
+@keyframes gradient-animation {
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
 }
 
-.dark .recharts-text {
-  fill: #D1D5DB;
+/* custom styles */
+
+.animate-gradient-right {
+  background: linear-gradient(to right, #6366f1, #a855f7);
+  background-size: 200% 100%;
+  animation: gradient-right 3s linear infinite;
 }
 
-.dark .recharts-legend-item-text {
-  color: #D1D5DB !important;
+.animate-gradient-left {
+  background: linear-gradient(to left, #a855f7, #6366f1);
+  background-size: 200% 100%;
+  animation: gradient-left 8s linear infinite;
+}
+
+.animate-gradient {
+  background: linear-gradient(270deg, #6366f1, #a855f7, #6366f1);
+  background-size: 200% 200%;
+  animation: gradient-animation 5s ease infinite;
+}
+
+
+/* glow some text */
+.text-glow-green {
+  color: #10b981;
+  text-shadow: 
+    1px 1px 2px rgba(0, 0, 0, 0.2), /* Base shadow for depth */
+    0 0 8px rgba(16, 185, 129, 0.8); /* Glow effect */
+}
+
+.text-glow-red {
+  color: #ef4444;
+  text-shadow: 
+    1px 1px 2px rgba(0, 0, 0, 0.2), /* Base shadow for depth */
+    0 0 8px rgba(239, 68, 68, 0.8); /* Glow effect */
+}
+
+.text-3d {
+  font-size: 1.5rem;
+  text-shadow: 
+    2px 2px 4px rgba(0, 0, 0, 0.3),
+    0 0 8px rgba(0, 0, 0, 0.1);
+}
+/* title 3d */
+.title-3d {
+  font-size: 1rem;
+  color: #ffffff;
+  text-shadow: 
+    2px 2px 0 #000000,
+    4px 4px 0 #000000,
+    6px 6px 0 #000000;
+}
+
+.icon-large {
+  width: 2rem;
+  height: 2rem;
+}
+
+.icon-3d {
+  width: 2rem;
+  height: 2rem;
+  color: #ffffff;
+  filter: drop-shadow(2px 2px 0 #000000)
+          drop-shadow(4px 4px 0 #000000)
+          drop-shadow(6px 6px 0 #000000);
+}
+
+.card-header {
+  background-color: #6366f1;
+  padding: 1rem;
+  border-radius: 0.5rem 0.5rem 0 0;
+}
+
+.card {
+  height: 100%;
 }
