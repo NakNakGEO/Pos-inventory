@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import  api  from '../services/api';
+import api from '../services/api';
 
 export const useProducts = () => {
   const [products, setProducts] = useState([]);
@@ -10,8 +10,10 @@ export const useProducts = () => {
     try {
       const response = await api.get('/products');
       setProducts(response.data);
+      setError(null); // Clear any previous errors
     } catch (err) {
       setError(err.message);
+      setProducts([]); // Clear products on error
     } finally {
       setLoading(false);
     }

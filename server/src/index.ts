@@ -4,6 +4,7 @@ dotenv.config();
 import express from 'express';
 import cors from 'cors';
 import apiRoutes from './routes/api';
+import { config } from './config'
 
 const app = express();
 
@@ -23,7 +24,7 @@ if (!process.env.JWT_SECRET_KEY) {
 app.use('/api', apiRoutes);
 console.log('API routes added');
 
-const PORT = process.env.PORT || 3000;
+const PORT = config.port;
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
 });

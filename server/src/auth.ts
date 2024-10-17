@@ -1,13 +1,16 @@
 import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
+import { config } from './config'; // Assuming you've created a config file as suggested earlier
 
-const SECRET_KEY = process.env.JWT_SECRET_KEY;
-
-if (!SECRET_KEY) {
+if (!config.jwtSecretKey) {
   throw new Error('JWT_SECRET_KEY is not set in environment variables');
 }
 
-export const authenticateToken = (req: Request, res: Response, next: NextFunction): void => {
+export interface AuthenticatedRequest extends Request {
+  user?: jwt.JwtPayload;
+}
+
+export const authenticateToken = (req: AuthenticatedRequest, res: Response, next: NextFunction): void => {
   const authHeader = req.headers['authorization'];
   console.log('Auth header:', authHeader);
   const token = authHeader && authHeader.split(' ')[1];
@@ -19,14 +22,19 @@ export const authenticateToken = (req: Request, res: Response, next: NextFunctio
     return;
   }
 
-  jwt.verify(token, SECRET_KEY, (err: jwt.VerifyErrors | null, user: any) => {
+  jwt.verify(token, config.jwtSecretKey as string, (err: jwt.VerifyErrors | null, decoded: any) => {
     if (err) {
       console.log('Token verification failed:', err);
       res.sendStatus(403);
       return;
     }
     console.log('Token verified successfully');
-    (req as any).user = user;
+    req.user = decoded;
     next();
   });
 };
+
+// You can keep your existing login logic here or in a separate file
+// export const login = async (req: Request, res: Response) => {
+//   // Your login logic here
+// };
