@@ -8,33 +8,40 @@ import Categories from './pages/Categories';
 import POS from './pages/POS';
 import Products from './pages/Products';
 import Customers from './pages/Customers';
+import PurchaseOrders from './pages/PurchaseOrders';
+import PurchaseOrderReport from './components/PurchaseOrderReport';
+import ErrorBoundary from './components/ErrorBoundary';
 
 function App() {
   return (
-    <Router>
-      <Routes>
-        <Route path="/login" element={<Login />} />
-        <Route
-          path="/*"
-          element={
-            isLoggedIn() ? (
-              <Layout>
-                <Routes>
-                  <Route path="/dashboard" element={<Dashboard />} />
-                  <Route path="/categories" element={<Categories />} />
-                  <Route path="/pos" element={<POS />} />
-                  <Route path="/products" element={<Products />} />
-                  <Route path="/customers" element={<Customers />} />
-                  <Route path="/" element={<Navigate to="/dashboard" replace />} />
-                </Routes>
-              </Layout>
-            ) : (
-              <Navigate to="/login" replace />
-            )
-          }
-        />
-      </Routes>
-    </Router>
+    <ErrorBoundary>
+      <Router>
+        <Routes>
+          <Route path="/login" element={<Login />} />
+          <Route
+            path="/*"
+            element={
+              isLoggedIn() ? (
+                <Layout>
+                  <Routes>
+                    <Route path="/dashboard" element={<Dashboard />} />
+                    <Route path="/categories" element={<Categories />} />
+                    <Route path="/pos" element={<POS />} />
+                    <Route path="/products" element={<Products />} />
+                    <Route path="/customers" element={<Customers />} />
+                    <Route path="/purchase-orders" element={<PurchaseOrders />} />
+                    <Route path="/purchase-order-report" element={<PurchaseOrderReport />} />
+                    <Route path="/" element={<Navigate to="/dashboard" replace />} />
+                  </Routes>
+                </Layout>
+              ) : (
+                <Navigate to="/login" replace />
+              )
+            }
+          />
+        </Routes>
+      </Router>
+    </ErrorBoundary>
   );
 }
 

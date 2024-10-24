@@ -2,8 +2,7 @@ import React from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { useCategories } from '../hooks/useCategories';
-import { useSuppliers } from '../hooks/useSuppliers';
+import { Category, Supplier, Product } from '../types';
 
 const productSchema = z.object({
   name: z.string().min(1, 'Name is required'),
@@ -12,148 +11,164 @@ const productSchema = z.object({
   price: z.number().min(0, 'Price must be a positive number'),
   stock: z.number().int().min(0, 'Stock must be a non-negative integer'),
   barcode: z.string().min(1, 'Barcode is required'),
-  productId: z.string().optional(),
+  description: z.string().optional(),
+  imageUrl: z.string().optional(),
 });
 
 type ProductFormData = z.infer<typeof productSchema>;
 
 interface ProductFormProps {
-  onSubmit: (data: ProductFormData) => void;
+  onSubmit: (data: Omit<Product, 'id'>) => void;
   onCancel: () => void;
-  initialData?: Partial<ProductFormData>;
+  initialData?: Product;
+  categories: Category[];
+  suppliers: Supplier[];
 }
 
-const ProductForm: React.FC<ProductFormProps> = ({ onSubmit, onCancel, initialData }) => {
-  const { categories } = useCategories();
-  const { suppliers } = useSuppliers();
+const ProductForm: React.FC<ProductFormProps> = ({ onSubmit, onCancel, initialData, categories, suppliers }) => {
   const {
     register,
     handleSubmit,
     formState: { errors },
   } = useForm<ProductFormData>({
-    resolver: zodResolver(productSchema),
-    defaultValues: initialData,
+    defaultValues: initialData || {
+      name: '',
+      categoryId: 0,
+      supplierId: 0,
+      price: 0,
+      stock: 0,
+      barcode: '',
+      description: '',
+      imageUrl: ''
+    }
   });
 
+  const onSubmitForm = (data: ProductFormData) => {
+    const formattedData: Omit<Product, 'id'> = {
+      name: data.name,
+      category_id: Number(data.categoryId),
+      supplier_id: Number(data.supplierId),
+      price: Number(data.price),
+      stock: Number(data.stock),
+      barcode: data.barcode || '',
+      description: data.description || '',
+      image_url: data.imageUrl || '',
+      created_at: new Date(),
+      updated_at: new Date()
+    };
+    onSubmit(formattedData);
+  };
+
   return (
-    <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+    <form onSubmit={handleSubmit(onSubmitForm)} className="space-y-4">
       <div>
-        <label htmlFor="name" className="block text-sm font-medium text-gray-700">
-          Name
-        </label>
+        <label htmlFor="name" className="block text-sm font-medium text-gray-700">Name</label>
         <input
-          type="text"
-          id="name"
           {...register('name')}
-          className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50"
+          id="name"
+          type="text"
+          className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-300 focus:ring focus:ring-blue-200 focus:ring-opacity-50"
         />
         {errors.name && <p className="mt-1 text-sm text-red-600">{errors.name.message}</p>}
       </div>
 
       <div>
-        <label htmlFor="productId" className="block text-sm font-medium text-gray-700">
-          Product ID (Optional)
-        </label>
-        <input
-          type="text"
-          id="productId"
-          {...register('productId')}
-          className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50"
-        />
-        {errors.productId && <p className="mt-1 text-sm text-red-600">{errors.productId.message}</p>}
-      </div>
-
-      <div>
-        <label htmlFor="categoryId" className="block text-sm font-medium text-gray-700">
-          Category
-        </label>
+        <label htmlFor="categoryId" className="block text-sm font-medium text-gray-700">Category</label>
         <select
-          id="categoryId"
           {...register('categoryId', { valueAsNumber: true })}
-          className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50"
+          id="categoryId"
+          className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-300 focus:ring focus:ring-blue-200 focus:ring-opacity-50"
         >
           <option value="">Select a category</option>
           {categories.map((category) => (
-            <option key={category.id} value={category.id}>
-              {category.name}
-            </option>
+              <option key={category.id} value={category.id}>{category.name}</option>
           ))}
         </select>
         {errors.categoryId && <p className="mt-1 text-sm text-red-600">{errors.categoryId.message}</p>}
       </div>
 
       <div>
-        <label htmlFor="supplierId" className="block text-sm font-medium text-gray-700">
-          Supplier
-        </label>
+        <label htmlFor="supplierId" className="block text-sm font-medium text-gray-700">Supplier</label>
         <select
-          id="supplierId"
           {...register('supplierId', { valueAsNumber: true })}
-          className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50"
+          id="supplierId"
+          className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-300 focus:ring focus:ring-blue-200 focus:ring-opacity-50"
         >
           <option value="">Select a supplier</option>
           {suppliers.map((supplier) => (
-            <option key={supplier.id} value={supplier.id}>
-              {supplier.name}
-            </option>
+            <option key={supplier.id} value={supplier.id}>{supplier.name}</option>
           ))}
         </select>
         {errors.supplierId && <p className="mt-1 text-sm text-red-600">{errors.supplierId.message}</p>}
       </div>
 
       <div>
-        <label htmlFor="price" className="block text-sm font-medium text-gray-700">
-          Price
-        </label>
+        <label htmlFor="price" className="block text-sm font-medium text-gray-700">Price</label>
         <input
-          type="number"
-          id="price"
-          step="0.01"
           {...register('price', { valueAsNumber: true })}
-          className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50"
+          id="price"
+          type="number"
+          step="0.01"
+          className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-300 focus:ring focus:ring-blue-200 focus:ring-opacity-50"
         />
         {errors.price && <p className="mt-1 text-sm text-red-600">{errors.price.message}</p>}
       </div>
 
       <div>
-        <label htmlFor="stock" className="block text-sm font-medium text-gray-700">
-          Stock
-        </label>
+        <label htmlFor="stock" className="block text-sm font-medium text-gray-700">Stock</label>
         <input
-          type="number"
-          id="stock"
           {...register('stock', { valueAsNumber: true })}
-          className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50"
+          id="stock"
+          type="number"
+          className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-300 focus:ring focus:ring-blue-200 focus:ring-opacity-50"
         />
         {errors.stock && <p className="mt-1 text-sm text-red-600">{errors.stock.message}</p>}
       </div>
 
       <div>
-        <label htmlFor="barcode" className="block text-sm font-medium text-gray-700">
-          Barcode
-        </label>
+        <label htmlFor="barcode" className="block text-sm font-medium text-gray-700">Barcode</label>
         <input
-          type="text"
-          id="barcode"
           {...register('barcode')}
-          className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50"
+          id="barcode"
+          type="text"
+          className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-300 focus:ring focus:ring-blue-200 focus:ring-opacity-50"
         />
         {errors.barcode && <p className="mt-1 text-sm text-red-600">{errors.barcode.message}</p>}
+      </div>
+
+      <div>
+        <label htmlFor="description" className="block text-sm font-medium text-gray-700">Description</label>
+        <textarea
+          {...register('description')}
+          id="description"
+          rows={3}
+          className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-300 focus:ring focus:ring-blue-200 focus:ring-opacity-50"
+        ></textarea>
+      </div>
+
+      <div>
+        <label htmlFor="image" className="block text-sm font-medium text-gray-700">Image URL</label>
+        <input
+          {...register('imageUrl')}
+          id="imageUrl"
+          type="text"
+          className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-300 focus:ring focus:ring-blue-200 focus:ring-opacity-50"
+        />
       </div>
 
       <div className="flex justify-end space-x-2">
         <button
           type="button"
           onClick={onCancel}
-          className="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+          className="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
         >
           Cancel
         </button>
         <button
           type="submit"
-          className="inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+          className="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
         >
-          Save Product
+          Save
         </button>
       </div>
     </form>

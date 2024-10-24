@@ -20,8 +20,8 @@ const Reports: React.FC = () => {
 
   const handleSearch = () => {
     const filtered = sales.filter(sale => {
-      const product = products.find(p => p.id === sale.productId);
-      const category = product ? categories.find(c => c.id === product.categoryId) : null;
+      const product = products.find(p => p.id === sale.items[0].product_id);
+      const category = product ? categories.find(c => c.id === product.category_id) : null;
       const saleDate = new Date(sale.date);
 
       return (
@@ -99,8 +99,8 @@ const Reports: React.FC = () => {
                 </thead>
                 <tbody className="text-gray-600 text-sm font-light">
                   {filteredSales.map((sale) => {
-                    const product = products.find(p => p.id === sale.productId);
-                    const category = product ? categories.find(c => c.id === product.categoryId) : null;
+                    const product = products.find(p => p.id === sale.items[0].product_id);
+                    const category = product ? categories.find(c => c.id === product.category_id) : null;
                     return (
                       <tr key={sale.id} className="border-b border-gray-200 hover:bg-gray-100">
                         <td className="py-3 px-6 text-left whitespace-nowrap">
@@ -108,9 +108,9 @@ const Reports: React.FC = () => {
                         </td>
                         <td className="py-3 px-6 text-left">{product?.name || 'N/A'}</td>
                         <td className="py-3 px-6 text-left">{category?.name || 'N/A'}</td>
-                        <td className="py-3 px-6 text-center">{sale.quantity}</td>
+                        <td className="py-3 px-6 text-center">{sale.items[0].quantity}</td>
                         <td className="py-3 px-6 text-center">${sale.total.toFixed(2)}</td>
-                        <td className="py-3 px-6 text-center">{sale.paymentMethod}</td>
+                        <td className="py-3 px-6 text-center">{sale.payment_method}</td>
                       </tr>
                     );
                   })}

@@ -1,6 +1,6 @@
-import { useState, useEffect } from 'react';
-import api from '../services/api';
-import { PurchaseOrder, PurchaseOrderItem } from '../types';
+import { useState, useEffect, useCallback } from 'react';
+import api, { markPurchaseOrderAsReceived } from '../services/api';
+import { PurchaseOrder } from '../types';
 import { handleApiError } from '../utils/errorHandling';
 
 export const usePurchaseOrders = () => {
@@ -8,60 +8,50 @@ export const usePurchaseOrders = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const fetchPurchaseOrders = async () => {
+  const fetchPurchaseOrders = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
-      const fetchedPurchaseOrders = await api.get('/purchase-orders');
-      setPurchaseOrders(fetchedPurchaseOrders.data);
+      const response = await api.get('/purchase-orders');
+      console.log('Purchase orders response:', response.data);
+      setPurchaseOrders(response.data);
     } catch (err) {
-      setError(handleApiError(err));
       console.error('Error fetching purchase orders:', err);
+      setError(handleApiError(err));
     } finally {
       setLoading(false);
     }
-  };
-
-  useEffect(() => {
-    fetchPurchaseOrders();
   }, []);
 
-  const addPurchaseOrder = async (order: Omit<PurchaseOrder, 'id'>, orderItems: Omit<PurchaseOrderItem, 'id'>[]) => {
+  const addPurchaseOrder = async (data: Omit<PurchaseOrder, 'id'>) => {
     setLoading(true);
     setError(null);
     try {
-      const newOrder = await api.post('/purchase-orders', { order, orderItems });
-      setPurchaseOrders(prevOrders => [...prevOrders, newOrder.data as unknown as PurchaseOrder]);
-      return newOrder.data as unknown as PurchaseOrder;
+      const response = await api.post('/purchase-orders', data);
+      setPurchaseOrders(prevOrders => [...prevOrders, response.data]);
+      return response.data;
     } catch (err) {
-      const errorMessage = handleApiError(err);
-      setError(errorMessage);
-      console.error('Error adding purchase order:', err);
-      throw new Error(errorMessage);
+      setError(handleApiError(err));
+      throw err;
     } finally {
       setLoading(false);
     }
   };
 
-  const updatePurchaseOrder = async (id: number, order: Partial<PurchaseOrder>) => {
+  const updatePurchaseOrder = async (id: number, data: Partial<PurchaseOrder>) => {
     setLoading(true);
     setError(null);
     try {
-      const currentOrder = purchaseOrders.find(o => o.id === id);
-      if (!currentOrder) {
-        throw new Error('Purchase order not found');
-      }
-      const completeOrder: Omit<PurchaseOrder, 'id'> = { ...currentOrder, ...order };
-      const updatedOrder = await api.put(`/purchase-orders/${id}`, { completeOrder, orderItems: [] });
-      setPurchaseOrders(prevOrders => 
-        prevOrders.map(o => o.id === id ? updatedOrder.data as unknown as PurchaseOrder : o)
+      const response = await api.patch(`/purchase-orders/${id}`, data);
+      setPurchaseOrders(prevOrders =>
+        prevOrders.map(order =>
+          order.id === id ? response.data : order
+        )
       );
-      return updatedOrder.data as unknown as PurchaseOrder;
+      return response.data;
     } catch (err) {
-      const errorMessage = handleApiError(err);
-      setError(errorMessage);
-      console.error('Error updating purchase order:', err);
-      throw new Error(errorMessage);
+      setError(handleApiError(err));
+      throw err;
     } finally {
       setLoading(false);
     }
@@ -72,22 +62,46 @@ export const usePurchaseOrders = () => {
     setError(null);
     try {
       await api.delete(`/purchase-orders/${id}`);
-      setPurchaseOrders(prevOrders => prevOrders.filter(o => o.id !== id));
+      setPurchaseOrders(prevOrders => prevOrders.filter(order => order.id !== id));
     } catch (err) {
       setError(handleApiError(err));
-      console.error('Error deleting purchase order:', err);
+      throw err;
     } finally {
       setLoading(false);
     }
   };
 
-  return { 
-    purchaseOrders, 
-    loading, 
-    error, 
-    fetchPurchaseOrders, 
-    addPurchaseOrder, 
-    updatePurchaseOrder, 
-    deletePurchaseOrder 
+  const markAsReceived = async (id: number) => {
+    setLoading(true);
+    setError(null);
+    try {
+      const updatedOrder = await markPurchaseOrderAsReceived(id);
+      setPurchaseOrders(prevOrders =>
+        prevOrders.map(order =>
+          order.id === id ? { ...order, status: 'completed' } : order
+        )
+      );
+      return updatedOrder;
+    } catch (err) {
+      setError(handleApiError(err));
+      throw err;
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchPurchaseOrders();
+  }, [fetchPurchaseOrders]);
+
+  return {
+    purchaseOrders,
+    loading,
+    error,
+    fetchPurchaseOrders,
+    addPurchaseOrder,
+    updatePurchaseOrder,
+    deletePurchaseOrder,
+    markAsReceived
   };
 };

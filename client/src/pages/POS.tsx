@@ -1,234 +1,290 @@
-import React, { useState, useMemo, useCallback } from 'react';
+import React, { useState, useCallback, useMemo } from 'react';
 import { useProducts } from '../hooks/useProducts';
-import { useCategories } from '../hooks/useCategories';
 import { useCustomers } from '../hooks/useCustomers';
 import { useSales } from '../hooks/useSales';
-import { Search, Plus, Minus, Trash2 } from 'lucide-react';
-import { handleApiError } from '../utils/errorHandling';
 import { useTranslation } from 'react-i18next';
+import { Search, ShoppingCart, User, DollarSign } from 'lucide-react';
+import { Product, Customer, Sale, SaleItem } from '../types';
 import ErrorMessage from '../components/ErrorMessage';
-import { Sale } from '../types';
-
-interface CartItem {
-  id: number;
-  name: string;
-  price: number;
-  quantity: number;
-}
-
-
+import { handleApiError } from '../utils/errorHandling';
+import { Card, CardHeader, CardTitle, CardContent } from '../components/ui/Card';
 
 const POS: React.FC = () => {
-  const { products, error: productsError } = useProducts();
-  const { error: categoriesError } = useCategories();
-  const { customers, error: customersError } = useCustomers();
+  const { products, loading: productsLoading, error: productsError, updateProduct } = useProducts();
+  const { customers, loading: customersLoading, error: customersError, addCustomer } = useCustomers();
   const { addSale, error: saleError } = useSales();
-  const [cart, setCart] = useState<CartItem[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
-  const [paymentMethod, setPaymentMethod] = useState('cash');
-  const [selectedCustomer, setSelectedCustomer] = useState<number | null>(null);
-  const [manualCustomerName, setManualCustomerName] = useState('');
-  const { t } = useTranslation();
+  const [cart, setCart] = useState<Array<{ product: Product; quantity: number }>>([]);
+  const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const { t } = useTranslation();
+  const [customerInput, setCustomerInput] = useState('');
+  const [phoneNumber, setPhoneNumber] = useState('');
+  const [location, setLocation] = useState('');
+  const [isAddingNewCustomer, setIsAddingNewCustomer] = useState(false);
 
   const filteredProducts = useMemo(() => 
-    products.filter(product =>
-      product.name.toLowerCase().includes(searchTerm.toLowerCase())
-    ),
+    products.filter(product => product && product.name && product.name.toLowerCase().includes(searchTerm.toLowerCase())),
     [products, searchTerm]
   );
 
-
-  const addToCart = useCallback((productId: number) => {
-    const product = products.find(p => p.id === productId);
-    if (product && product.stock > 0) {
-      setCart(prevCart => {
-        const existingItem = prevCart.find(item => item.id === productId);
-        if (existingItem) {
-          return prevCart.map(item =>
-            item.id === productId ? { ...item, quantity: item.quantity + 1 } : item
-          );
-        } else {
-          return [...prevCart, { id: product.id, name: product.name, price: product.price, quantity: 1 }];
-        }
-      });
-    }
-  }, [products]);
-
-
-  const removeFromCart = useCallback((productId: number) => {
-    setCart(prevCart => prevCart.filter(item => item.id !== productId));
-  }, []);
-
-
-  const updateCartItemQuantity = useCallback((productId: number, newQuantity: number) => {
-    if (newQuantity > 0) {
-      setCart(prevCart => prevCart.map(item =>
-        item.id === productId ? { ...item, quantity: newQuantity } : item
+  const handleAddToCart = (product: Product) => {
+    const existingItem = cart.find(item => item.product.id === product.id);
+    if (existingItem) {
+      setCart(cart.map(item =>
+        item.product.id === product.id
+          ? { ...item, quantity: item.quantity + 1 }
+          : item
       ));
     } else {
-      removeFromCart(productId);
+      setCart([...cart, { product, quantity: 1 }]);
     }
-  }, [removeFromCart]);
+  };
 
+  const removeFromCart = useCallback((productId: number) => {
+    setCart(prevCart => prevCart.filter(item => item.product.id !== productId));
+  }, []);
 
-  const subtotal = useMemo(() => 
-    cart.reduce((sum, item) => sum + item.price * item.quantity, 0),
+  const updateQuantity = useCallback((productId: number, quantity: number) => {
+    setCart(prevCart =>
+      prevCart.map(item =>
+        item.product.id === productId ? { ...item, quantity } : item
+      )
+    );
+  }, []);
+
+  const total = useMemo(() => 
+    cart.reduce((sum, item) => sum + item.product.price * item.quantity, 0),
     [cart]
   );
 
-
-  const total = useMemo(() => subtotal, [subtotal]);
-
-  const customerInfo = useMemo(() => {
-    if (selectedCustomer) {
-      const customer = customers.find(c => c.id === selectedCustomer);
-      return customer ? customer.name : 'Unknown Customer';
-    }
-    return manualCustomerName || 'Walk-in Customer';
-  }, [selectedCustomer, customers, manualCustomerName]);
-
-
-  const handleCheckout = useCallback(async () => {
-    if (cart.length === 0) {
-      setError('Cart is empty');
-      return;
-    }
-
+  const handleCheckout = async () => {
     try {
-      const saleData = {
-        date: new Date().toISOString(),
-        customerId: selectedCustomer || 0,
-        customerName: selectedCustomer ? customers.find(c => c.id === selectedCustomer)?.name || '' : manualCustomerName,
-        saleItems: cart.map(item => ({
-          productId: item.id,
-          quantity: item.quantity,
-          price: item.price,
-          subtotal: item.price * item.quantity,
-        })),
-        total: total,
-        paymentMethod: paymentMethod,
-        status: 'completed' as const,
-        notes: '',
-      };
-      await addSale(saleData as unknown as Omit<Sale, 'id'>, cart.map(item => ({
-        saleId: 0,
-        productId: item.id,
-        quantity: item.quantity,
-        price: item.price,
-        subtotal: item.price * item.quantity,
-        discount: null,
-      })));
+      let checkoutCustomer = selectedCustomer;
 
-      const stockUpdatePromises = cart.map(item => {
-        const product = products.find(p => p.id === item.id);
-        if (!product) {
-          throw new Error(`Product not found: ${item.id}`);
+      if (!checkoutCustomer && customerInput.trim()) {
+        const existingCustomer = customers.find(
+          c => c.name.toLowerCase() === customerInput.trim().toLowerCase()
+        );
+
+        if (existingCustomer) {
+          checkoutCustomer = existingCustomer;
+        } else {
+          checkoutCustomer = await handleAddNewCustomer(customerInput.trim(), phoneNumber, location);
         }
-        return updateProduct(product.id, { ...product, stock: product.stock - item.quantity });
-      });
+      }
 
+      const saleData: Omit<Sale, 'id'> = {
+        customer_id: checkoutCustomer?.id || null,
+        total,
+        date: new Date().toISOString(),
+        payment_method: '',
+        status: 'completed',
+        notes: '',
+        items: [],
+      };
 
-      await Promise.all(stockUpdatePromises);
+      const saleItems: Omit<SaleItem, 'id'>[] = cart.map(item => ({
+        sale_id: 0,
+        product_id: item.product.id,
+        quantity: item.quantity,
+        price: item.product.price,
+        discount: 0,
+        subtotal: item.product.price * item.quantity
+      }));
 
-      // Reset cart and form
+      const newSale = await addSale({ ...saleData, items: saleItems });
+
+      // Update product stock
+      for (const item of cart) {
+        const updatedStock = item.product.stock - item.quantity;
+        await updateProduct(item.product.id, { ...item.product, stock: updatedStock });
+      }
+
       setCart([]);
-      setPaymentMethod('cash');
       setSelectedCustomer(null);
-      setManualCustomerName('');
       setError(null);
-    } catch (error) {
-      setError(handleApiError(error));
+      setCustomerInput('');
+      setPhoneNumber('');
+      setLocation('');
+      setIsAddingNewCustomer(false);
+    } catch (err) {
+      setError(handleApiError(err));
     }
-  }, [cart, selectedCustomer, customers, manualCustomerName, total, paymentMethod, addSale, products, updateProduct]);
+  };
 
-  const errorMessage = useMemo(() => {
-    if (productsError) return handleApiError(productsError);
-    if (categoriesError) return handleApiError(categoriesError);
-    if (customersError) return handleApiError(customersError);
-    if (saleError) return handleApiError(saleError);
-    return null;
-  }, [productsError, categoriesError, customersError, saleError]);
+  const handleAddNewCustomer = async (name: string, phone: string, location: string) => {
+    try {
+      const newCustomer = await addCustomer({
+        name,
+        phone,
+        address: location,
+        email: '',
+        loyalty_points: 0
+      });
+      return newCustomer;
+    } catch (err) {
+      setError(handleApiError(err));
+      return null;
+    }
+  };
+
+  if (productsLoading || customersLoading) {
+    return <div>Loading...</div>;
+  }
 
   return (
-    <div>
-      <h1>{t('pos.title')}</h1>
-      <ErrorMessage error={error || errorMessage} />
+    <div className="container mx-auto px-4 py-8">
+      <h1 className="text-3xl font-bold text-gray-800 mb-6">{t('pos.title')}</h1>
       
-      <div role="search">
-        <input
-          type="text"
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-          placeholder={t('pos.searchPlaceholder')}
-          aria-label={t('pos.searchLabel')}
-        />
-      </div>
+      <ErrorMessage error={error || productsError || customersError || saleError} />
       
-      <div role="region" aria-label={t('pos.productList')}>
-        {filteredProducts.map((product) => (
-          <button
-            key={product.id}
-            onClick={() => addToCart(product.id)}
-            disabled={product.stock === 0}
-            aria-label={t('pos.addToCart', { name: product.name })}
-          >
-            {product.name} - ${product.price.toFixed(2)}
-          </button>
-        ))}
-      </div>
-      
-      <div role="region" aria-label={t('pos.cart')}>
-        <h2>{t('pos.cart')}</h2>
-        <ul>
-          {cart.map((item) => (
-            <li key={item.id}>
-              {item.name} - ${item.price.toFixed(2)} x {item.quantity}
-              <button
-                onClick={() => updateCartItemQuantity(item.id, item.quantity - 1)}
-                aria-label={t('pos.decreaseQuantity', { name: item.name })}
-              >
-                <Minus size={18} />
-              </button>
-              <button
-                onClick={() => updateCartItemQuantity(item.id, item.quantity + 1)}
-                aria-label={t('pos.increaseQuantity', { name: item.name })}
-              >
-                <Plus size={18} />
-              </button>
-              <button
-                onClick={() => removeFromCart(item.id)}
-                aria-label={t('pos.removeFromCart', { name: item.name })}
-              >
-                <Trash2 size={18} />
-              </button>
-            </li>
-          ))}
-        </ul>
-        <p>{t('pos.total')}: ${total.toFixed(2)}</p>
-        <p>{t('pos.customer')}: {customerInfo}</p>
-        <select
-          value={paymentMethod}
-          onChange={(e) => setPaymentMethod(e.target.value)}
-          aria-label={t('pos.selectPaymentMethod')}
-        >
-          <option value="cash">{t('pos.cash')}</option>
-          <option value="card">{t('pos.card')}</option>
-        </select>
-        <button 
-          onClick={handleCheckout}
-          aria-label={t('pos.proceedToCheckout')}
-        >
-          {t('pos.checkout')}
-        </button>
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <Card className="lg:col-span-2 shadow-lg">
+          <CardHeader className="card-header">
+            <CardTitle className="title-3d flex items-center">
+              <ShoppingCart className="mr-2" size={24} />
+              {t('Product')}
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="p-4 bg-white text-gray-900 rounded-b-lg">
+            <div className="flex items-center mb-4">
+              <Search className="text-gray-400 mr-2" size={20} />
+              <input
+                type="text"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                placeholder={t('pos.searchPlaceholder')}
+                className="w-full p-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+            </div>
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
+              {filteredProducts.map((product) => (
+                <button
+                  key={product.id}
+                  onClick={() => handleAddToCart(product)}
+                  className="p-4 border rounded-lg hover:bg-gray-100 transition-colors flex flex-col items-center"
+                >
+                  <img
+                    src={product.image_url || '/placeholder-image.png'}
+                    alt={product.name}
+                    className="w-24 h-24 object-cover rounded-lg mb-2"
+                  />
+                  <p className="font-semibold text-center">{product.name}</p>
+                  <p className="text-sm text-gray-600">${product.price.toFixed(2)}</p>
+                </button>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="shadow-lg">
+          <CardHeader className="card-header">
+            <CardTitle className="title-3d flex items-center">
+              <User className="mr-2" size={24} />
+              {t('pos.cart')}
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="p-4 bg-white text-gray-900 rounded-b-lg">
+            <div className="mb-4">
+              <div className="relative">
+                <input
+                  type="text"
+                  value={customerInput}
+                  onChange={(e) => {
+                    setCustomerInput(e.target.value);
+                    setIsAddingNewCustomer(true);
+                  }}
+                  onFocus={() => setIsAddingNewCustomer(true)}
+                  placeholder={t('pos.selectOrAddCustomer')}
+                  className="w-full p-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+                {isAddingNewCustomer && customerInput && (
+                  <ul className="absolute z-10 w-full bg-white border border-gray-300 rounded-lg mt-1 max-h-60 overflow-auto">
+                    {customers
+                      .filter(c => c.name.toLowerCase().includes(customerInput.toLowerCase()))
+                      .map(customer => (
+                        <li
+                          key={customer.id}
+                          className="p-2 hover:bg-gray-100 cursor-pointer"
+                          onClick={() => {
+                            setSelectedCustomer(customer);
+                            setCustomerInput(customer.name);
+                            setPhoneNumber(customer.phone || '');
+                            setLocation(customer.address || '');
+                            setIsAddingNewCustomer(false);
+                          }}
+                        >
+                          {customer.name}
+                        </li>
+                      ))}
+                    <li
+                      className="p-2 hover:bg-gray-100 cursor-pointer font-bold"
+                      onClick={() => {
+                        setSelectedCustomer(null);
+                        setIsAddingNewCustomer(true);
+                      }}
+                    >
+                      {t('pos.addNewCustomer')}: {customerInput}
+                    </li>
+                  </ul>
+                )}
+              </div>
+              {isAddingNewCustomer && (
+                <>
+                  <input
+                    type="tel"
+                    value={phoneNumber}
+                    onChange={(e) => setPhoneNumber(e.target.value)}
+                    placeholder={t('pos.phoneNumber')}
+                    className="w-full p-2 mt-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                  <input
+                    type="text"
+                    value={location}
+                    onChange={(e) => setLocation(e.target.value)}
+                    placeholder={t('pos.location')}
+                    className="w-full p-2 mt-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                </>
+              )}
+            </div>
+            {cart.map(item => (
+              <div key={item.product.id} className="flex justify-between items-center mb-2">
+                <span>{item.product.name}</span>
+                <div>
+                  <input
+                    type="number"
+                    min="1"
+                    value={item.quantity}
+                    onChange={(e) => updateQuantity(item.product.id, Number(e.target.value))}
+                    className="w-16 p-1 border rounded mr-2"
+                  />
+                  <button
+                    onClick={() => removeFromCart(item.product.id)}
+                    className="text-red-600 hover:text-red-800"
+                  >
+                    {t('pos.remove')}
+                  </button>
+                </div>
+              </div>
+            ))}
+            <div className="mt-4 text-xl font-bold">
+              {t('pos.total')}: ${total.toFixed(2)}
+            </div>
+            <button
+              onClick={handleCheckout}
+              className="mt-4 w-full bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded flex items-center justify-center"
+              disabled={cart.length === 0}
+            >
+              <DollarSign size={20} className="mr-2" />
+              {t('pos.checkout')}
+            </button>
+          </CardContent>
+        </Card>
       </div>
     </div>
   );
 };
 
-
 export default POS;
-function updateProduct(id: any, arg1: any): any {
-  throw new Error('Function not implemented.');
-}
-

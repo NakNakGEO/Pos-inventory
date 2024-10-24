@@ -3,11 +3,11 @@ export interface User {
   username: string;
   password: string;
   email: string | null;
-  role: UserRole;
-  firstName: string | null;
-  lastName: string | null;
-  createdAt: Date;
-  lastLogin: Date | null;
+  role: UserRole | null;
+  first_name: string | null;
+  last_name: string | null;
+  created_at: Date | null;
+  last_login: Date | null;
 }
 
 export type UserRole = 'admin' | 'user' | 'manager';
@@ -15,22 +15,22 @@ export type UserRole = 'admin' | 'user' | 'manager';
 export interface Product {
   id: number;
   name: string;
-  categoryId: number | null;
-  supplierId: number | null;
+  category_id: number;
+  supplier_id: number;
   price: number;
   stock: number;
-  barcode: string | null;
-  description: string | null;
-  imageUrl: string | null;
-  createdAt: Date;
-  updatedAt: Date | null;
+  barcode: string;
+  description: string;
+  image_url: string;
+  created_at: Date | string;
+  updated_at: Date | string;
 }
 
 export interface Category {
   id: number;
   name: string;
   description: string | null;
-  parentId: number | null;
+  parent_id: number | null;
 }
 
 export interface Supplier {
@@ -48,65 +48,99 @@ export interface Customer {
   email: string | null;
   phone: string | null;
   address: string | null;
-  loyaltyPoints: number | null;
-  createdAt: Date;
+  loyalty_points: number | null;
+  created_at: string;
 }
 
 export interface InventoryForecast {
-  productId: number;
-  productName: string;
-  currentStock: number;
-  projectedDemand: number | null;
-  recommendedReorderQuantity: number | null;
-  reorderPoint: number | null;
-  projectedStockOutDate: Date | null;
-  forecastPeriod: string | null;
-  confidenceLevel: number | null;
+  id: number;
+  product_id: number | null;
+  current_stock: number;
+  projected_demand: number | null;
+  recommended_reorder_quantity: number | null;
+  reorder_point: number | null;
+  projected_stock_out_date: Date | null;
+  forecast_period: string | null;
+  confidence_level: number | null;
+  created_at: Date | null;
 }
 
 export interface Sale {
-  productId: number;
-  quantity: number;
-  saleItems: any;
   id: number;
-  customerId: number | null;
+  customer_id: number | null;
   date: string;
   total: number;
-  paymentMethod: string | null;
-  status: 'completed' | 'refunded' | 'cancelled';
-  notes: string | null;
-}
-
-export interface PurchaseOrder {
-  productName: string;
-  supplierName: string;
-  id: number;
-  supplierId: number;
-  productId: number;
-  date: string;
-  quantity: number;
+  payment_method: string;
   status: 'pending' | 'completed' | 'cancelled';
-  remarks?: string | null;
-  expectedDeliveryDate: string | null;
-  totalCost: number;
+  notes: string | null;
+  customer?: Customer;
+  items: SaleItem[];
 }
 
 export interface SaleItem {
   id: number;
-  saleId: number;
-  productId: number;
+  sale_id: number;
+  product_id: number;
   quantity: number;
   price: number;
   discount: number | null;
   subtotal: number;
+  product?: Product;
+}
+
+export interface PurchaseOrder {
+  id: number;
+  supplier_id: number;
+  supplier?: {
+    name: string;
+  };
+  date: string;
+  expected_delivery_date: string | null;
+  status: 'pending' | 'completed' | 'cancelled';
+  total_cost: number;
+  remarks: string | null;
+  purchase_order_items: {
+    id: any;
+    purchase_order_id: any;
+    product_id: any;
+    price: any;
+    received_quantity: any;
+    status: any;
+    quantity: number;
+    product: {
+      id: any;
+      name: string;
+      image_url: string;
+    };
+  }[];
 }
 
 export interface PurchaseOrderItem {
   id: number;
-  purchaseOrderId: number;
-  productId: number;
+  purchase_order_id: number;
+  product_id: number;
   quantity: number;
   price: number;
-  receivedQuantity: number | null;
-  status: 'pending' | 'received' | 'backordered';
+  received_quantity: number | null;
+  status: 'pending' | 'received' | 'backordered' | null;
+}
+
+export interface NewSale {
+  customer_id: number | null;
+  total: number;
+  payment_method: string;
+  status: 'pending' | 'completed' | 'cancelled';
+  notes: string | null;
+  items: Omit<SaleItem, 'id' | 'sale_id'>[];
+}
+
+export interface ProductFormData {
+  name: string;
+  category_id: string | number;
+  supplier_id: string | number;
+  price: number | string;
+  stock: number | string;
+  barcode?: string;
+  description?: string;
+  image_url?: string;
 }

@@ -1,0 +1,34 @@
+{
+  "purchaseOrders": {
+    "title": "Purchase Orders",
+    "list": "Purchase Order List",
+    "addNew": "Add New Purchase Order",
+    "edit": "Edit Purchase Order",
+    "supplier": "Supplier",
+    "date": "Date",
+    "expectedDelivery": "Expected Delivery",
+    "totalCost": "Total Cost",
+    "status": "Status",
+    "actions": "Actions",
+    "receive": "Receive",
+    "delete": "Delete",
+    "confirmDelete": "Are you sure you want to delete this purchase order?",
+    "selectSupplier": "Select a supplier",
+    "remarks": "Remarks",
+    "expectedDeliveryDate": "Expected Delivery Date",
+    "pending": "Pending",
+    "completed": "Completed",
+    "cancelled": "Cancelled",
+    "deleteError": "An error occurred while deleting the purchase order. Please try again.",
+    "products": "Products",
+    "receivedSuccess": "Purchase order marked as received successfully",
+    "receivedError": "Error marking purchase order as received"
+  },
+  "common": {
+    "loading": "Loading...",
+    "error": "Error",
+    "cancel": "Cancel",
+    "create": "Create",
+    "update": "Update"
+  }
+}

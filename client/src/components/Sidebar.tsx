@@ -33,7 +33,7 @@ const Sidebar: React.FC = () => {
     >
       <div className="p-4 bg-opacity-50 text-white shadow-lg">
         <h1 className="text-xl font-bold tracking-wide transform transition-transform duration-300 hover:scale-105">
-          Maestro Furniture
+          InventoryPOS
         </h1>
       </div>
       <nav className="flex-1 overflow-y-auto py-4">

@@ -10,10 +10,10 @@ const Users: React.FC = () => {
     password: '',
     role: 'user' as UserRole,
     email: '',
-    firstName: '',
-    lastName: '',
-    createdAt: new Date(),
-    lastLogin: new Date()
+    first_name: '',
+    last_name: '',
+    created_at: new Date(),
+    last_login: new Date()
   });
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -29,10 +29,10 @@ const Users: React.FC = () => {
       password: '',
       role: 'user' as UserRole,
       email: '',
-      firstName: '',
-      lastName: '',
-      createdAt: new Date(),
-      lastLogin: new Date()
+      first_name: '',
+      last_name: '',
+      created_at: new Date(),
+      last_login: new Date()
     });
   };
 
@@ -81,10 +81,10 @@ const Users: React.FC = () => {
                     password: '',
                     role: user.role,
                     email: user.email,
-                    firstName: user.firstName,
-                    lastName: user.lastName,
-                    createdAt: user.createdAt,
-                    lastLogin: user.lastLogin
+                    first_name: user.first_name,
+                    last_name: user.last_name,
+                    created_at: user.created_at,
+                    last_login: user.last_login
                   });
                 }}
                 className="bg-yellow-500 text-white p-1 rounded mr-2"
